@@ -1,0 +1,51 @@
+/* ====== 動態結果面板模組 ====== */
+        .result-panel {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            display: none; /* 預設隱藏 */
+            opacity: 0;
+            transform: translateY(20px); /* 預設往下移一點，用於滑入動畫 */
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+
+        /* 當 JS 加上 show class 時觸發滑入動畫 */
+        .result-panel.show {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 安全狀態的樣式 */
+        .result-panel.safe {
+            background: rgba(0, 255, 204, 0.1);
+            border: 2px solid #00ffcc;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
+            color: #00ffcc;
+        }
+
+        /* 危險狀態的樣式 */
+        .result-panel.danger {
+            background: rgba(255, 77, 77, 0.1);
+            border: 2px solid #ff4d4d;
+            box-shadow: 0 0 20px rgba(255, 77, 77, 0.4);
+            color: #ff4d4d;
+            animation: pulse-danger 2s infinite; /* 危險呼吸燈效果 */
+        }
+
+        @keyframes pulse-danger {
+            0% { box-shadow: 0 0 20px rgba(255, 77, 77, 0.4); }
+            50% { box-shadow: 0 0 40px rgba(255, 77, 77, 0.8); }
+            100% { box-shadow: 0 0 20px rgba(255, 77, 77, 0.4); }
+        }
+
+        /* 數字跳動的字體特效 */
+        .pwned-count {
+            font-size: 3.5em;
+            font-weight: bold;
+            text-shadow: 0 0 15px #ff4d4d;
+            margin: 15px 0;
+            font-family: 'Impact', sans-serif;
+            letter-spacing: 5px;
+        }

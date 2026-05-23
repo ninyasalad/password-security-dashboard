@@ -1,51 +1,223 @@
-/* ====== 動態結果面板模組 ====== */
-        .result-panel {
-            margin-top: 30px;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            display: none; /* 預設隱藏 */
-            opacity: 0;
-            transform: translateY(20px); /* 預設往下移一點，用於滑入動畫 */
-            transition: opacity 0.5s ease, transform 0.5s ease;
-        }
+/* ==========================================
+   1. 老師的色票系統與全域設定
+   ========================================== */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap');
 
-        /* 當 JS 加上 show class 時觸發滑入動畫 */
-        .result-panel.show {
-            display: block;
-            opacity: 1;
-            transform: translateY(0);
-        }
+:root {
+    --bg: #05060b;
+    --accent-1: #00f5d4;
+    --accent-2: #f5d000;
+    --accent-3: #ff3c7d;
+    --text-primary: #f5f7ff;
+    --text-muted: #8b93b8;
+}
 
-        /* 安全狀態的樣式 */
-        .result-panel.safe {
-            background: rgba(0, 255, 204, 0.1);
-            border: 2px solid #00ffcc;
-            box-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
-            color: #00ffcc;
-        }
+body {
+    background-color: var(--bg);
+    color: var(--text-primary);
+    font-family: 'Space Grotesk', 'Courier New', Courier, monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+    margin: 0;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
 
-        /* 危險狀態的樣式 */
-        .result-panel.danger {
-            background: rgba(255, 77, 77, 0.1);
-            border: 2px solid #ff4d4d;
-            box-shadow: 0 0 20px rgba(255, 77, 77, 0.4);
-            color: #ff4d4d;
-            animation: pulse-danger 2s infinite; /* 危險呼吸燈效果 */
-        }
+h1 {
+    text-shadow: 0 0 15px var(--accent-1);
+    margin-bottom: 30px;
+    letter-spacing: 2px;
+    color: var(--accent-1);
+}
 
-        @keyframes pulse-danger {
-            0% { box-shadow: 0 0 20px rgba(255, 77, 77, 0.4); }
-            50% { box-shadow: 0 0 40px rgba(255, 77, 77, 0.8); }
-            100% { box-shadow: 0 0 20px rgba(255, 77, 77, 0.4); }
-        }
+/* ==========================================
+   3. 老師的視覺模組：玻璃擬態磁吸卡片
+   ========================================== */
+.dashboard.media-card {
+    position: relative;
+    width: 100%;
+    max-width: 600px;
+    padding: 30px;
+    border-radius: 1.5rem;
+    
+    /* 玻璃擬態背景與邊框 */
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    
+    /* 3D 磁吸設定 */
+    transform-style: preserve-3d;
+    transition: transform 0.2s ease-out;
+    box-shadow: 0 25px 45px rgba(0, 0, 0, 0.5);
+    isolation: isolate;
+}
 
-        /* 數字跳動的字體特效 */
-        .pwned-count {
-            font-size: 3.5em;
-            font-weight: bold;
-            text-shadow: 0 0 15px #ff4d4d;
-            margin: 15px 0;
-            font-family: 'Impact', sans-serif;
-            letter-spacing: 5px;
-        }
+/* 玻璃卡片背後的霓虹光暈 */
+.dashboard.media-card::before,
+.dashboard.media-card::after {
+    content: '';
+    position: absolute;
+    inset: 1rem;
+    border-radius: 999px;
+    filter: blur(40px);
+    opacity: 0.2;
+    z-index: -1;
+    pointer-events: none;
+}
+.dashboard.media-card::before {
+    background: var(--accent-1);
+    transform: translate3d(-30%, -30%, 0);
+}
+.dashboard.media-card::after {
+    background: var(--accent-3);
+    transform: translate3d(30%, 30%, 0);
+}
+
+/* ==========================================
+   4. 戰情室內部 UI 元件
+   ========================================== */
+input[type="password"] {
+    width: 95%;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    font-size: 18px;
+    border-radius: 8px;
+    outline: none;
+    margin-bottom: 20px;
+    letter-spacing: 2px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+input[type="password"]:focus {
+    border-color: var(--accent-1);
+    box-shadow: 0 0 10px rgba(0, 245, 212, 0.3);
+}
+
+.strength-meter {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+
+.strength-bar {
+    height: 100%;
+    width: 0%;
+    transition: all 0.4s ease;
+}
+
+#strengthText {
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: var(--accent-1);
+}
+
+.chart-container {
+    max-width: 250px;
+    margin: 0 auto 20px auto;
+}
+
+.hash-box {
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px dashed rgba(255, 255, 255, 0.2);
+    padding: 15px;
+    border-radius: 8px;
+    font-size: 14px;
+    word-break: break-all;
+    margin-bottom: 15px;
+}
+
+.hash-prefix {
+    color: #000;
+    background-color: var(--accent-1);
+    font-weight: bold;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+.hash-suffix { color: var(--text-muted); }
+
+.info-text {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 25px;
+}
+
+/* 老師的按鈕樣式 */
+.button--primary {
+    width: 100%;
+    border: none;
+    padding: 1rem;
+    border-radius: 999px;
+    font-weight: bold;
+    font-size: 1.1rem;
+    cursor: pointer;
+    background: linear-gradient(135deg, var(--accent-1), var(--accent-3));
+    color: #000;
+    box-shadow: 0 10px 30px rgba(0, 245, 212, 0.3);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.button--primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 40px rgba(0, 245, 212, 0.5);
+}
+
+/* ==========================================
+   5. 動態比對結果面板
+   ========================================== */
+.result-panel {
+    width: 100%;
+    max-width: 600px;
+    margin-top: 30px;
+    padding: 20px;
+    border-radius: 1rem;
+    text-align: center;
+    display: none;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    backdrop-filter: blur(10px);
+}
+
+.result-panel.show {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.result-panel.safe {
+    background: rgba(0, 245, 212, 0.1);
+    border: 1px solid var(--accent-1);
+    box-shadow: 0 0 20px rgba(0, 245, 212, 0.2);
+    color: var(--accent-1);
+}
+
+.result-panel.danger {
+    background: rgba(255, 60, 125, 0.1);
+    border: 1px solid var(--accent-3);
+    box-shadow: 0 0 20px rgba(255, 60, 125, 0.3);
+    color: var(--accent-3);
+    animation: pulse-danger 2s infinite;
+}
+
+@keyframes pulse-danger {
+    0% { box-shadow: 0 0 20px rgba(255, 60, 125, 0.3); }
+    50% { box-shadow: 0 0 40px rgba(255, 60, 125, 0.6); }
+    100% { box-shadow: 0 0 20px rgba(255, 60, 125, 0.3); }
+}
+
+.pwned-count {
+    font-size: 3.5em;
+    font-weight: bold;
+    text-shadow: 0 0 15px var(--accent-3);
+    margin: 15px 0;
+    font-family: 'Impact', sans-serif;
+    letter-spacing: 5px;
+}

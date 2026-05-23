@@ -1,5 +1,135 @@
 // ==========================================
-// 1. 取得畫面上的 HTML 元素
+// 1. 視覺引擎初始化 (網狀數據節點與磁吸)
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+    const mainCard = document.getElementById('mainCard');
+
+    // 啟動背景：網狀數據節點動畫
+    initNetworkCanvas();
+
+    // 啟動玻璃卡片 3D 磁吸效果
+    if (mainCard) {
+        mainCard.addEventListener('mousemove', (event) => {
+            const bounds = mainCard.getBoundingClientRect();
+            const x = ((event.clientX - bounds.left) / bounds.width) - 0.5;
+            const y = ((event.clientY - bounds.top) / bounds.height) - 0.5;
+            mainCard.style.transform = `rotateX(${y * -10}deg) rotateY(${x * 10}deg)`;
+        });
+
+        mainCard.addEventListener('mouseleave', () => {
+            mainCard.style.transform = `rotateX(0deg) rotateY(0deg)`;
+        });
+    }
+});
+
+// 全新背景引擎：駭客網狀數據連線 (Canvas)
+function initNetworkCanvas() {
+    const canvas = document.getElementById('networkCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
+    let particles = [];
+
+    // 粒子設定參數 (顏色採用你原本的 --accent-1 螢光青色)
+    const properties = {
+        particleColor: 'rgba(0, 245, 212, 0.8)',
+        lineColor: 'rgba(0, 245, 212, ', // 後面會動態加上透明度
+        particleAmount: (width * height) / 12000, // 根據螢幕大小決定節點數量
+        defaultRadius: 2,
+        velocity: 0.6, // 移動速度
+        linkRadius: 140, // 節點連線的偵測距離
+    };
+
+    // 視窗縮放時重新計算大小
+    window.addEventListener('resize', () => {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+        properties.particleAmount = (width * height) / 12000;
+        initParticles();
+    });
+
+    // 定義節點 (Particle) 類別
+    class Particle {
+        constructor() {
+            this.x = Math.random() * width;
+            this.y = Math.random() * height;
+            this.velocityX = (Math.random() * (properties.velocity * 2)) - properties.velocity;
+            this.velocityY = (Math.random() * (properties.velocity * 2)) - properties.velocity;
+        }
+        // 更新位置 (碰到邊緣會反彈)
+        position() {
+            this.x += this.velocityX;
+            this.y += this.velocityY;
+            if (this.x + properties.defaultRadius > width || this.x - properties.defaultRadius < 0) this.velocityX *= -1;
+            if (this.y + properties.defaultRadius > height || this.y - properties.defaultRadius < 0) this.velocityY *= -1;
+        }
+        // 畫出節點
+        redraw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, properties.defaultRadius, 0, Math.PI * 2);
+            ctx.fillStyle = properties.particleColor;
+            ctx.fill();
+        }
+    }
+
+    // 初始化所有節點
+    function initParticles() {
+        particles = [];
+        for (let i = 0; i < properties.particleAmount; i++) {
+            particles.push(new Particle());
+        }
+    }
+
+    // 畫出節點之間的連線
+    function drawLines() {
+        for (let i = 0; i < particles.length; i++) {
+            for (let j = i + 1; j < particles.length; j++) {
+                let x1 = particles[i].x;
+                let y1 = particles[i].y;
+                let x2 = particles[j].x;
+                let y2 = particles[j].y;
+                // 計算兩點距離
+                let length = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+                
+                // 如果距離小於設定值，就畫線（越近線越清楚）
+                if (length < properties.linkRadius) {
+                    let opacity = 1 - (length / properties.linkRadius);
+                    ctx.lineWidth = 1;
+                    ctx.strokeStyle = properties.lineColor + opacity + ')';
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.closePath();
+                    ctx.stroke();
+                }
+            }
+        }
+    }
+
+    // 動畫無窮迴圈
+    function loop() {
+        requestAnimationFrame(loop);
+        ctx.clearRect(0, 0, width, height); // 清空畫布
+        for (let i = 0; i < particles.length; i++) {
+            particles[i].position();
+            particles[i].redraw();
+        }
+        drawLines();
+    }
+
+    initParticles();
+    loop();
+}
+
+// ==========================================
+// 2. 密碼戰情室邏輯與 Chart.js 初始化
+// (這行以下保留你原本的程式碼，完全不用動！)
+// ==========================================
+
+// ==========================================
+// 2. 密碼戰情室邏輯與 Chart.js 初始化
 // ==========================================
 const pwdInput = document.getElementById('pwdInput');
 const strengthText = document.getElementById('strengthText');
@@ -7,22 +137,19 @@ const strengthBar = document.getElementById('strengthBar');
 const hashPrefix = document.getElementById('hashPrefix');
 const hashSuffix = document.getElementById('hashSuffix');
 
-// 結果面板的元素
 const resultPanel = document.getElementById('resultPanel');
 const resultTitle = document.getElementById('resultTitle');
 const resultDesc = document.getElementById('resultDesc');
 const countDisplay = document.getElementById('pwnedCount');
 
-// ==========================================
-// 2. 初始化 Chart.js 密碼強度儀表板
-// ==========================================
+// 初始化 Chart.js
 const ctx = document.getElementById('strengthChart').getContext('2d');
 let strengthChart = new Chart(ctx, {
     type: 'doughnut',
     data: {
         datasets: [{
-            data: [0, 5], // [目前強度, 剩下空間]
-            backgroundColor: ['#222', '#222'],
+            data: [0, 5],
+            backgroundColor: ['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.1)'],
             borderWidth: 0,
             circumference: 180,
             rotation: 270,
@@ -31,28 +158,23 @@ let strengthChart = new Chart(ctx, {
     options: {
         aspectRatio: 2,
         cutout: '80%',
-        plugins: {
-            tooltip: { enabled: false },
-            legend: { display: false }
-        }
+        plugins: { tooltip: { enabled: false }, legend: { display: false } }
     }
 });
 
 // ==========================================
-// 3. 監聽打字事件：即時更新圖表與產生雜湊
+// 3. 監聽打字事件：即時分析
 // ==========================================
 pwdInput.addEventListener('input', async (e) => {
     const password = e.target.value;
-
-    // 當使用者開始修改密碼時，立刻隱藏先前的比對結果面板
-    resultPanel.className = 'result-panel';
+    resultPanel.className = 'result-panel'; // 打字時隱藏先前的結果
 
     if (!password) {
         resetDashboard();
         return;
     }
 
-    // --- 計算密碼強度分數 ---
+    // 計算分數
     let score = 0;
     if (password.length >= 8) score += 1; 
     if (/[A-Z]/.test(password)) score += 1; 
@@ -60,48 +182,46 @@ pwdInput.addEventListener('input', async (e) => {
     if (/[0-9]/.test(password)) score += 1; 
     if (/[^A-Za-z0-9]/.test(password)) score += 1; 
 
-    // --- 定義強度狀態 ---
+    // 定義顏色狀態 (配合老師的色票)
     const states = {
-        '0': { color: '#ff4d4d', text: '極弱 (非常容易被破解)' },
-        '1': { color: '#ff4d4d', text: '極弱 (非常容易被破解)' },
-        '2': { color: '#ff4d4d', text: '弱 (容易被破解)' },
-        '3': { color: '#ffcc00', text: '中等 (安全性一般)' },
+        '0': { color: 'var(--accent-3)', text: '極弱 (非常容易被破解)' },
+        '1': { color: 'var(--accent-3)', text: '極弱 (非常容易被破解)' },
+        '2': { color: 'var(--accent-3)', text: '弱 (容易被破解)' },
+        '3': { color: 'var(--accent-2)', text: '中等 (安全性一般)' },
         '4': { color: '#00ccff', text: '強 (安全性良好)' },
-        '5': { color: '#00ffcc', text: '極強 (堅不可摧)' }
+        '5': { color: 'var(--accent-1)', text: '極強 (堅不可摧)' }
     };
 
     const currentState = states[score.toString()];
 
-    // --- 更新文字與進度條 ---
+    // 更新進度條與文字
     strengthBar.style.width = `${(score / 5) * 100}%`;
     strengthBar.style.background = currentState.color;
     strengthText.innerText = `強度評估：${currentState.text}`;
     strengthText.style.color = currentState.color;
 
-    // --- 更新 Chart.js 動態圖表 ---
+    // 更新 Chart.js
     strengthChart.data.datasets[0].data = [score, 5 - score];
-    strengthChart.data.datasets[0].backgroundColor = [currentState.color, '#222'];
+    strengthChart.data.datasets[0].backgroundColor = [currentState.color, 'rgba(255,255,255,0.1)'];
     strengthChart.update();
 
-    // --- 產生 SHA-1 雜湊指紋 ---
+    // 產生 SHA-1 雜湊
     const hashHex = await generateSHA1(password);
     hashPrefix.innerText = hashHex.substring(0, 5).toUpperCase();
     hashSuffix.innerText = hashHex.substring(5).toUpperCase();
 });
 
-// 重置儀表板的輔助函數
 function resetDashboard() {
     strengthBar.style.width = '0%';
     strengthText.innerText = '強度評估：等待輸入...';
-    strengthText.style.color = '#00ffcc';
+    strengthText.style.color = 'var(--accent-1)';
     hashPrefix.innerText = '-----';
     hashSuffix.innerText = '-----------------------------------';
     strengthChart.data.datasets[0].data = [0, 5];
-    strengthChart.data.datasets[0].backgroundColor = ['#222', '#222'];
+    strengthChart.data.datasets[0].backgroundColor = ['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.1)'];
     strengthChart.update();
 }
 
-// 本地端產生 SHA-1 雜湊 (Web Crypto API)
 async function generateSHA1(message) {
     const msgBuffer = new TextEncoder().encode(message);
     const hashBuffer = await crypto.subtle.digest('SHA-1', msgBuffer);
@@ -110,7 +230,7 @@ async function generateSHA1(message) {
 }
 
 // ==========================================
-// 4. 點擊按鈕：API 串接與結果面板動畫
+// 4. 點擊按鈕：API 串接與結果動畫
 // ==========================================
 document.getElementById('checkBtn').addEventListener('click', async () => {
     const prefix = hashPrefix.innerText;
@@ -122,17 +242,13 @@ document.getElementById('checkBtn').addEventListener('click', async () => {
         return;
     }
 
-    // 讓按鈕變成載入狀態
     const originalBtnText = btn.innerText;
     btn.innerText = "連線至全球外洩資料庫比對中...";
-    btn.style.background = "#ffcc00"; 
+    btn.style.background = "var(--accent-2)"; 
     btn.disabled = true;
-    
-    // 隱藏舊的面板，準備顯示新結果
     resultPanel.className = 'result-panel';
 
     try {
-        // 發送請求給 Python 後端 (k-匿名化前 5 碼)
         const response = await fetch('/api/pwned', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -146,7 +262,6 @@ document.getElementById('checkBtn').addEventListener('click', async () => {
             let isPwned = false;
             let pwnedCount = 0;
 
-            // 在本地端比對後綴
             for (let line of hashList) {
                 const [returnedSuffix, count] = line.trim().split(':');
                 if (returnedSuffix === mySuffix) {
@@ -156,8 +271,7 @@ document.getElementById('checkBtn').addEventListener('click', async () => {
                 }
             }
 
-            // --- 觸發結果面板與動畫 ---
-            resultPanel.className = 'result-panel show'; // 加上 show 觸發滑入動畫
+            resultPanel.className = 'result-panel show'; 
 
             if (isPwned) {
                 resultPanel.classList.add('danger');
@@ -165,14 +279,11 @@ document.getElementById('checkBtn').addEventListener('click', async () => {
                 resultDesc.innerText = '這組密碼已經在歷史駭客外洩事件中出現過，強烈建議您立即更換！';
                 countDisplay.style.display = 'block';
                 
-                // 實作數字跳動動畫 (Count-Up Animation)
                 let startTimestamp = null;
-                const duration = 1500; // 動畫持續 1.5 秒
-                
+                const duration = 1500; 
                 const step = (timestamp) => {
                     if (!startTimestamp) startTimestamp = timestamp;
                     const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-                    // 讓數字跳動先快後慢 (easeOutQuart)
                     const easeProgress = 1 - Math.pow(1 - progress, 4);
                     const currentCount = Math.floor(easeProgress * pwnedCount);
                     
@@ -185,7 +296,6 @@ document.getElementById('checkBtn').addEventListener('click', async () => {
                     }
                 };
                 window.requestAnimationFrame(step);
-
             } else {
                 resultPanel.classList.add('safe');
                 resultTitle.innerText = '✅ 安全確認';
@@ -197,11 +307,10 @@ document.getElementById('checkBtn').addEventListener('click', async () => {
         }
 
     } catch (error) {
-        alert("[連線失敗] 無法與戰情室伺服器取得聯繫，請確認 Python 後端是否正在運行。");
+        alert("[連線失敗] 無法與戰情室伺服器取得聯繫。");
     } finally {
-        // 恢復按鈕狀態
         btn.innerText = originalBtnText;
-        btn.style.background = "#00ffcc";
+        btn.style.background = ""; 
         btn.disabled = false;
     }
 });

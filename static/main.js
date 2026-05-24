@@ -184,12 +184,12 @@ pwdInput.addEventListener('input', async (e) => {
 
     // 定義顏色狀態 (配合老師的色票)
     const states = {
-        '0': { color: 'var(--accent-3)', text: '極弱 (非常容易被破解)' },
-        '1': { color: 'var(--accent-3)', text: '極弱 (非常容易被破解)' },
-        '2': { color: 'var(--accent-3)', text: '弱 (容易被破解)' },
-        '3': { color: 'var(--accent-2)', text: '中等 (安全性一般)' },
+        '0': { color: '#ff3c7d', text: '極弱 (非常容易被破解)' },
+        '1': { color: '#ff3c7d', text: '極弱 (非常容易被破解)' },
+        '2': { color: '#ff3c7d', text: '弱 (容易被破解)' },
+        '3': { color: '#f5d000', text: '中等 (安全性一般)' },
         '4': { color: '#00ccff', text: '強 (安全性良好)' },
-        '5': { color: 'var(--accent-1)', text: '極強 (堅不可摧)' }
+        '5': { color: '#00f5d4', text: '極強 (堅不可摧)' }
     };
 
     const currentState = states[score.toString()];
@@ -214,7 +214,7 @@ pwdInput.addEventListener('input', async (e) => {
 function resetDashboard() {
     strengthBar.style.width = '0%';
     strengthText.innerText = '強度評估：等待輸入...';
-    strengthText.style.color = 'var(--accent-1)';
+    strengthText.style.color = '#00f5d4';
     hashPrefix.innerText = '-----';
     hashSuffix.innerText = '-----------------------------------';
     strengthChart.data.datasets[0].data = [0, 5];
